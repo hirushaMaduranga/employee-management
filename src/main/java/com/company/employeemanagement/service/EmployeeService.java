@@ -29,4 +29,16 @@ public class EmployeeService {
     public void deleteEmployee(Long id) {
         employeeRepository.deleteById(id);
     }
+
+    public long getTotalEmployeeCount() {
+        return employeeRepository.count();
+    }
+
+    public long getActiveEmployeeCount() {
+        return employeeRepository.countByStatusIgnoreCase("ACTIVE");
+    }
+
+    public long getInactiveEmployeeCount() {
+        return employeeRepository.countByStatusIgnoreCase("INACTIVE");
+    }
 }
