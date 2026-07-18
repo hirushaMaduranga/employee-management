@@ -1,7 +1,9 @@
 package com.company.employeemanagement.controller;
 
+import com.company.employeemanagement.dto.EmployeeRequest;
 import com.company.employeemanagement.entity.Employee;
 import com.company.employeemanagement.service.EmployeeService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,35 +41,27 @@ public class EmployeeController {
 
     @PostMapping
     public ResponseEntity<Employee> createEmployee(
-            @RequestBody Employee employee) {
+            @Valid @RequestBody EmployeeRequest request) {
 
-        Employee savedEmployee =
-                employeeService.saveEmployee(employee);
+        Employee createdEmployee =
+                employeeService.createEmployee(request);
 
-        return ResponseEntity.ok(savedEmployee);
+        return ResponseEntity.ok(createdEmployee);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Employee> updateEmployee(
             @PathVariable Long id,
-            @RequestBody Employee employee) {
+            @Valid @RequestBody EmployeeRequest request) {
 
-        return employeeService.getEmployeeById(id)
-                .map(existingEmployee -> {
+        Employee updatedEmployee =
+                employeeService.updateEmployee(id, request);
 
-                    employee.setEmployeeId(id);
-
-                    Employee updatedEmployee =
-                            employeeService.saveEmployee(employee);
-
-                    return ResponseEntity.ok(updatedEmployee);
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(updatedEmployee);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEmployee(
-            @PathVariable Long id) {
+    public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
 
         if (employeeService.getEmployeeById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
