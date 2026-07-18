@@ -17,9 +17,14 @@ public class Designation {
     @Column(name = "designation_id")
     private Long designationId;
 
-    @Column(name = "designation_name", nullable = false, unique = true, length = 100)
+    @Column(
+            name = "designation_name",
+            nullable = false,
+            unique = true,
+            length = 100
+    )
     private String designationName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TINYINT")
     private Boolean active = true;
 }
