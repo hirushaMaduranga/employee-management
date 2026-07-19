@@ -9,13 +9,21 @@ import com.company.employeemanagement.repository.DesignationRepository;
 import com.company.employeemanagement.repository.EmployeeRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +31,9 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final DesignationRepository designationRepository;
+
+    @Value("${app.upload.dir}")
+    private String uploadDir;
 
     public List<Employee> getAllEmployees() {
         return employeeRepository.findAll();
@@ -73,7 +84,7 @@ public class EmployeeService {
         employee.setDesignation(designation);
         employee.setProfileImagePath(request.getProfileImagePath());
         employee.setDateOfBirth(request.getDateOfBirth());
-        employee.setStatus(request.getStatus());
+        employee.setStatus(request.getStatus().toUpperCase());
         employee.setCreatedAt(LocalDateTime.now());
         employee.setUpdatedAt(LocalDateTime.now());
 
@@ -114,7 +125,7 @@ public class EmployeeService {
                         )
                 );
 
-        // These fields cannot be changed:
+        // These fields are intentionally not updated:
         // employeeCode
         // gender
         // dateOfBirth
@@ -127,8 +138,101 @@ public class EmployeeService {
         employee.setEmail(request.getEmail());
         employee.setDesignation(designation);
         employee.setProfileImagePath(request.getProfileImagePath());
-        employee.setStatus(request.getStatus());
+        employee.setStatus(request.getStatus().toUpperCase());
         employee.setUpdatedAt(LocalDateTime.now());
+
+        return employeeRepository.save(employee);
+    }
+
+    public Employee updateEmployeeStatus(Long id, String status) {
+
+        Employee employee = employeeRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Employee not found"
+                        )
+                );
+
+        if (!status.equalsIgnoreCase("ACTIVE")
+                && !status.equalsIgnoreCase("INACTIVE")) {
+
+            throw new IllegalArgumentException(
+                    "Status must be ACTIVE or INACTIVE"
+            );
+        }
+
+        employee.setStatus(status.toUpperCase());
+        employee.setUpdatedAt(LocalDateTime.now());
+
+        return employeeRepository.save(employee);
+    }
+
+    public Employee uploadProfileImage(
+            Long id,
+            MultipartFile file) throws IOException {
+
+        Employee employee = employeeRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Employee not found"
+                        )
+                );
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Profile image is required"
+            );
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null
+                || (!contentType.equals("image/jpeg")
+                && !contentType.equals("image/png"))) {
+
+            throw new IllegalArgumentException(
+                    "Only JPG and PNG images are allowed"
+            );
+        }
+
+        Path uploadPath = Paths.get(uploadDir);
+
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+
+        if (originalFilename != null
+                && originalFilename.contains(".")) {
+
+            extension = originalFilename.substring(
+                    originalFilename.lastIndexOf(".")
+            );
+        }
+
+        String fileName =
+                UUID.randomUUID() + extension;
+
+        Path filePath =
+                uploadPath.resolve(fileName);
+
+        Files.copy(
+                file.getInputStream(),
+                filePath,
+                StandardCopyOption.REPLACE_EXISTING
+        );
+
+        employee.setProfileImagePath(
+                filePath.toString()
+        );
+
+        employee.setUpdatedAt(
+                LocalDateTime.now()
+        );
 
         return employeeRepository.save(employee);
     }
@@ -149,11 +253,13 @@ public class EmployeeService {
     }
 
     public long getActiveEmployeeCount() {
-        return employeeRepository.countByStatusIgnoreCase("ACTIVE");
+        return employeeRepository
+                .countByStatusIgnoreCase("ACTIVE");
     }
 
     public long getInactiveEmployeeCount() {
-        return employeeRepository.countByStatusIgnoreCase("INACTIVE");
+        return employeeRepository
+                .countByStatusIgnoreCase("INACTIVE");
     }
 
     public List<Employee> searchEmployees(
@@ -163,13 +269,18 @@ public class EmployeeService {
         Specification<Employee> specification =
                 (root, query, criteriaBuilder) -> {
 
-                    List<Predicate> predicates = new ArrayList<>();
+                    List<Predicate> predicates =
+                            new ArrayList<>();
 
                     if (keyword != null
                             && !keyword.trim().isEmpty()) {
 
                         String searchValue =
-                                "%" + keyword.toLowerCase().trim() + "%";
+                                "%" +
+                                        keyword
+                                                .toLowerCase()
+                                                .trim()
+                                        + "%";
 
                         predicates.add(
                                 criteriaBuilder.or(

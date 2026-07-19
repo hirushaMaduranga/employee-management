@@ -44,7 +44,7 @@ public class Employee {
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "designation_id", nullable = false)
     private Designation designation;
 
@@ -60,6 +60,6 @@ public class Employee {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }
