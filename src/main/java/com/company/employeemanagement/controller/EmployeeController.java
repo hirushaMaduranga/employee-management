@@ -28,19 +28,30 @@ public class EmployeeController {
 
     @GetMapping("/search")
     public List<Employee> searchEmployees(
-            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String employeeCode,
+            @RequestParam(required = false) String nic,
+            @RequestParam(required = false) String name,
             @RequestParam(defaultValue = "ALL") String status) {
 
-        return employeeService.searchEmployees(keyword, status);
+        return employeeService.searchEmployees(
+                employeeCode,
+                nic,
+                name,
+                status
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Employee> getEmployeeById(@PathVariable Long id) {
+    public ResponseEntity<Employee> getEmployeeById(
+            @PathVariable Long id) {
 
         Employee employee = employeeService
                 .getEmployeeById(id)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Employee not found"));
+                        new ResourceNotFoundException(
+                                "Employee not found"
+                        )
+                );
 
         return ResponseEntity.ok(employee);
     }
@@ -60,7 +71,10 @@ public class EmployeeController {
             @Valid @RequestBody EmployeeRequest request) {
 
         return ResponseEntity.ok(
-                employeeService.updateEmployee(id, request)
+                employeeService.updateEmployee(
+                        id,
+                        request
+                )
         );
     }
 
@@ -70,7 +84,10 @@ public class EmployeeController {
             @RequestParam String status) {
 
         return ResponseEntity.ok(
-                employeeService.updateEmployeeStatus(id, status)
+                employeeService.updateEmployeeStatus(
+                        id,
+                        status
+                )
         );
     }
 
@@ -81,12 +98,16 @@ public class EmployeeController {
             throws IOException {
 
         return ResponseEntity.ok(
-                employeeService.uploadProfileImage(id, file)
+                employeeService.uploadProfileImage(
+                        id,
+                        file
+                )
         );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteEmployee(
+            @PathVariable Long id) {
 
         employeeService.deleteEmployee(id);
 
