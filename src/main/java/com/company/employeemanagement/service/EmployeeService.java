@@ -3,6 +3,8 @@ package com.company.employeemanagement.service;
 import com.company.employeemanagement.dto.EmployeeRequest;
 import com.company.employeemanagement.entity.Designation;
 import com.company.employeemanagement.entity.Employee;
+import com.company.employeemanagement.exception.ResourceAlreadyExistsException;
+import com.company.employeemanagement.exception.ResourceNotFoundException;
 import com.company.employeemanagement.repository.DesignationRepository;
 import com.company.employeemanagement.repository.EmployeeRepository;
 import jakarta.persistence.criteria.Predicate;
@@ -32,9 +34,31 @@ public class EmployeeService {
 
     public Employee createEmployee(EmployeeRequest request) {
 
+        if (employeeRepository.existsByEmployeeCode(request.getEmployeeCode())) {
+            throw new ResourceAlreadyExistsException(
+                    "Employee code already exists"
+            );
+        }
+
+        if (employeeRepository.existsByNic(request.getNic())) {
+            throw new ResourceAlreadyExistsException(
+                    "NIC already exists"
+            );
+        }
+
+        if (employeeRepository.existsByEmail(request.getEmail())) {
+            throw new ResourceAlreadyExistsException(
+                    "Email already exists"
+            );
+        }
+
         Designation designation = designationRepository
                 .findById(request.getDesignationId())
-                .orElseThrow(() -> new RuntimeException("Designation not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Designation not found"
+                        )
+                );
 
         Employee employee = new Employee();
 
@@ -60,11 +84,43 @@ public class EmployeeService {
 
         Employee employee = employeeRepository
                 .findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Employee not found"
+                        )
+                );
+
+        if (employeeRepository.existsByEmployeeCodeAndEmployeeIdNot(
+                request.getEmployeeCode(), id)) {
+
+            throw new ResourceAlreadyExistsException(
+                    "Employee code already exists"
+            );
+        }
+
+        if (employeeRepository.existsByNicAndEmployeeIdNot(
+                request.getNic(), id)) {
+
+            throw new ResourceAlreadyExistsException(
+                    "NIC already exists"
+            );
+        }
+
+        if (employeeRepository.existsByEmailAndEmployeeIdNot(
+                request.getEmail(), id)) {
+
+            throw new ResourceAlreadyExistsException(
+                    "Email already exists"
+            );
+        }
 
         Designation designation = designationRepository
                 .findById(request.getDesignationId())
-                .orElseThrow(() -> new RuntimeException("Designation not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Designation not found"
+                        )
+                );
 
         employee.setEmployeeCode(request.getEmployeeCode());
         employee.setFirstName(request.getFirstName());
@@ -84,6 +140,13 @@ public class EmployeeService {
     }
 
     public void deleteEmployee(Long id) {
+
+        if (!employeeRepository.existsById(id)) {
+            throw new ResourceNotFoundException(
+                    "Employee not found"
+            );
+        }
+
         employeeRepository.deleteById(id);
     }
 
@@ -99,7 +162,9 @@ public class EmployeeService {
         return employeeRepository.countByStatusIgnoreCase("INACTIVE");
     }
 
-    public List<Employee> searchEmployees(String keyword, String status) {
+    public List<Employee> searchEmployees(
+            String keyword,
+            String status) {
 
         Specification<Employee> specification =
                 (root, query, criteriaBuilder) -> {
@@ -114,19 +179,27 @@ public class EmployeeService {
                         predicates.add(
                                 criteriaBuilder.or(
                                         criteriaBuilder.like(
-                                                criteriaBuilder.lower(root.get("employeeCode")),
+                                                criteriaBuilder.lower(
+                                                        root.get("employeeCode")
+                                                ),
                                                 searchValue
                                         ),
                                         criteriaBuilder.like(
-                                                criteriaBuilder.lower(root.get("nic")),
+                                                criteriaBuilder.lower(
+                                                        root.get("nic")
+                                                ),
                                                 searchValue
                                         ),
                                         criteriaBuilder.like(
-                                                criteriaBuilder.lower(root.get("firstName")),
+                                                criteriaBuilder.lower(
+                                                        root.get("firstName")
+                                                ),
                                                 searchValue
                                         ),
                                         criteriaBuilder.like(
-                                                criteriaBuilder.lower(root.get("lastName")),
+                                                criteriaBuilder.lower(
+                                                        root.get("lastName")
+                                                ),
                                                 searchValue
                                         )
                                 )
@@ -139,7 +212,9 @@ public class EmployeeService {
 
                         predicates.add(
                                 criteriaBuilder.equal(
-                                        criteriaBuilder.upper(root.get("status")),
+                                        criteriaBuilder.upper(
+                                                root.get("status")
+                                        ),
                                         status.toUpperCase()
                                 )
                         );
