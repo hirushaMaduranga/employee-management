@@ -2,6 +2,10 @@ package com.company.employeemanagement.controller;
 
 import com.company.employeemanagement.entity.Employee;
 import com.company.employeemanagement.service.EmployeeService;
+import com.lowagie.text.Document;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -11,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -25,8 +30,7 @@ public class ReportController {
     @GetMapping("/employees/csv")
     public ResponseEntity<byte[]> exportEmployeesCsv() {
 
-        List<Employee> employees =
-                employeeService.getAllEmployees();
+        List<Employee> employees = employeeService.getAllEmployees();
 
         StringBuilder csv = new StringBuilder();
 
@@ -69,5 +73,110 @@ public class ReportController {
                         MediaType.parseMediaType("text/csv")
                 )
                 .body(data);
+    }
+
+    @GetMapping("/employees/pdf")
+    public ResponseEntity<byte[]> exportEmployeesPdf() {
+
+        List<Employee> employees = employeeService.getAllEmployees();
+
+        ByteArrayOutputStream outputStream =
+                new ByteArrayOutputStream();
+
+        Document document = new Document();
+
+        PdfWriter.getInstance(
+                document,
+                outputStream
+        );
+
+        document.open();
+
+        document.add(
+                new Paragraph("Employee Report")
+        );
+
+        document.add(
+                new Paragraph(" ")
+        );
+
+        PdfPTable table = new PdfPTable(8);
+
+        table.addCell("Employee Code");
+        table.addCell("Name");
+        table.addCell("NIC");
+        table.addCell("Mobile");
+        table.addCell("Email");
+        table.addCell("Designation");
+        table.addCell("Date of Birth");
+        table.addCell("Status");
+
+        for (Employee employee : employees) {
+
+            table.addCell(
+                    employee.getEmployeeCode() != null
+                            ? employee.getEmployeeCode()
+                            : ""
+            );
+
+            table.addCell(
+                    employee.getFirstName()
+                            + " "
+                            + employee.getLastName()
+            );
+
+            table.addCell(
+                    employee.getNic() != null
+                            ? employee.getNic()
+                            : ""
+            );
+
+            table.addCell(
+                    employee.getMobileNo() != null
+                            ? employee.getMobileNo()
+                            : ""
+            );
+
+            table.addCell(
+                    employee.getEmail() != null
+                            ? employee.getEmail()
+                            : ""
+            );
+
+            table.addCell(
+                    employee.getDesignation() != null
+                            ? employee.getDesignation()
+                            .getDesignationName()
+                            : ""
+            );
+
+            table.addCell(
+                    employee.getDateOfBirth() != null
+                            ? employee.getDateOfBirth().toString()
+                            : ""
+            );
+
+            table.addCell(
+                    employee.getStatus() != null
+                            ? employee.getStatus()
+                            : ""
+            );
+        }
+
+        document.add(table);
+
+        document.close();
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=employee-report.pdf"
+                )
+                .contentType(
+                        MediaType.APPLICATION_PDF
+                )
+                .body(
+                        outputStream.toByteArray()
+                );
     }
 }
