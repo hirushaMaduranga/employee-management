@@ -90,14 +90,6 @@ public class EmployeeService {
                         )
                 );
 
-        if (employeeRepository.existsByEmployeeCodeAndEmployeeIdNot(
-                request.getEmployeeCode(), id)) {
-
-            throw new ResourceAlreadyExistsException(
-                    "Employee code already exists"
-            );
-        }
-
         if (employeeRepository.existsByNicAndEmployeeIdNot(
                 request.getNic(), id)) {
 
@@ -122,17 +114,19 @@ public class EmployeeService {
                         )
                 );
 
-        employee.setEmployeeCode(request.getEmployeeCode());
+        // These fields cannot be changed:
+        // employeeCode
+        // gender
+        // dateOfBirth
+
         employee.setFirstName(request.getFirstName());
         employee.setLastName(request.getLastName());
         employee.setAddress(request.getAddress());
         employee.setNic(request.getNic());
         employee.setMobileNo(request.getMobileNo());
-        employee.setGender(request.getGender());
         employee.setEmail(request.getEmail());
         employee.setDesignation(designation);
         employee.setProfileImagePath(request.getProfileImagePath());
-        employee.setDateOfBirth(request.getDateOfBirth());
         employee.setStatus(request.getStatus());
         employee.setUpdatedAt(LocalDateTime.now());
 
@@ -171,7 +165,8 @@ public class EmployeeService {
 
                     List<Predicate> predicates = new ArrayList<>();
 
-                    if (keyword != null && !keyword.trim().isEmpty()) {
+                    if (keyword != null
+                            && !keyword.trim().isEmpty()) {
 
                         String searchValue =
                                 "%" + keyword.toLowerCase().trim() + "%";
@@ -221,7 +216,9 @@ public class EmployeeService {
                     }
 
                     return criteriaBuilder.and(
-                            predicates.toArray(new Predicate[0])
+                            predicates.toArray(
+                                    new Predicate[0]
+                            )
                     );
                 };
 
